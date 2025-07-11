@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head><title>TTS Client</title></head>
+<body>
+  <h2>Chatterbox TTS WebSocket</h2>
+  <input type="text" id="text" placeholder="Escribe una oración..." size="40">
+  <button onclick="sendText()">Hablar</button>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:8000/stream");
+    let audioQueue = [];
+
+    ws.onmessage = async (event) => {
+      const data = JSON.parse(event.data);
+      if (data.audio_content) {
+        const audioBytes = Uint8Array.from(atob(data.audio_content), c => c.charCodeAt(0));
+        audioQueue.push(audioBytes);
+        if (audioQueue.length === 1) playNextChunk();
+      }
+    };
+
+    function sendText() {
+      const text = document.getElementById("text").value;
+      ws.send(text);
+    }
+
+    async function playNextChunk() {
+      if (audioQueue.length === 0) return;
+
+      const chunk = audioQueue.shift();
+      const ctx = new AudioContext({ sampleRate: 24000 });
+      const buffer = ctx.createBuffer(1, chunk.length / 2, 24000);
+      const view = new DataView(chunk.buffer);
+      const channelData = buffer.getChannelData(0);
+
+      for (let i = 0; i < channelData.length; i++) {
+        channelData[i] = view.getInt16(i * 2, true) / 32767;
+      }
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      source.onended = playNextChunk;
+    }
+  </script>
+</body>
+</html>
