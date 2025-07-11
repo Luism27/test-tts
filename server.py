@@ -41,3 +41,27 @@ async def websocket_stream(websocket: WebSocket):
             await websocket.send_json({"audio_end": True})
     except Exception as e:
         print("Error:", e)
+
+
+# --- Main Execution ---
+if __name__ == "__main__":
+    server_host = "0.0.0.0"
+    server_port = 8006
+    # server_port = get_port()
+
+    print(f"Starting TTS Server directly on http://{server_host}:{server_port}")
+    print(
+        f"API documentation will be available at http://{server_host}:{server_port}/docs"
+    )
+    print(f"Web UI will be available at http://{server_host}:{server_port}/")
+
+    import uvicorn
+
+    uvicorn.run(
+        "server:app",
+        host=server_host,
+        port=server_port,
+        log_level="info",
+        workers=1,
+        reload=False,
+    )
