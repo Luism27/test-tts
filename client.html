@@ -7,7 +7,7 @@
   <button onclick="sendText()">Hablar</button>
 
   <script>
-    const ws = new WebSocket("ws://localhost:8000/stream");
+    const ws = new WebSocket("ws://35.168.198.162:8006/stream");
     let audioQueue = [];
 
     ws.onmessage = async (event) => {
