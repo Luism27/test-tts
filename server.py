@@ -24,8 +24,8 @@ async def websocket_stream(websocket: WebSocket):
             text = await websocket.receive_text()
 
             # ✅ Usa .generate()
-            audio_tensor, sample_rate = TTS_MODEL.generate(text)
-
+            audio_tensor = TTS_MODEL.generate(text=text)
+            sample_rate = 24000
             # Convertir a NumPy
             audio_np = audio_tensor.detach().cpu().contiguous().numpy().squeeze()
 
