@@ -4,12 +4,12 @@ import numpy as np
 import torch
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
-from chatterbox.tts import load_tts
+from chatterbox.tts import ChatterboxTTS
 
 app = FastAPI()
 
 # Precargar modelo
-TTS_MODEL = load_tts("resemble/your_model_id", device="cuda")
+TTS_MODEL = ChatterboxTTS.from_pretrained(device="cuda")
 
 @app.get("/")
 async def get():
@@ -22,18 +22,21 @@ async def websocket_stream(websocket: WebSocket):
     try:
         while True:
             text = await websocket.receive_text()
-            audio_gen = TTS_MODEL.stream(text, sample_rate=24000)
 
-            async for audio_chunk in audio_gen:
-                if isinstance(audio_chunk, torch.Tensor):
-                    audio_np = audio_chunk.detach().cpu().numpy().squeeze()
-                else:
-                    audio_np = audio_chunk
+            # ✅ Usa .generate()
+            audio_tensor, sample_rate = TTS_MODEL.generate(text)
 
-                # Convertir a bytes PCM int16
-                int_audio = (audio_np * 32767).astype(np.int16).tobytes()
+            # Convertir a NumPy
+            audio_np = audio_tensor.detach().cpu().contiguous().numpy().squeeze()
+
+            # Simular streaming: trocear audio
+            chunk_size = int(sample_rate * 0.2)  # ~200ms por chunk
+            for i in range(0, len(audio_np), chunk_size):
+                chunk = audio_np[i:i+chunk_size]
+                int_audio = (chunk * 32767).astype(np.int16).tobytes()
                 b64_audio = base64.b64encode(int_audio).decode("utf-8")
                 await websocket.send_json({"audio_content": b64_audio})
+                await asyncio.sleep(0.05)  # simula real-time
 
             await websocket.send_json({"audio_end": True})
     except Exception as e:

@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 # Install chatterbox from our Colab-compatible fork instead of PyPI
-git+https://github.com/devnen/chatterbox.git
+chatterbox-tts
 torch
+torchvision
+torchaudio
 numpy
